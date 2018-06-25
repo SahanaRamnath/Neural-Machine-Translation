@@ -46,38 +46,6 @@ def create_train_model(param,scope) :
 
 	return TrainModel(graph=graph,model=model,iterator=train_iterator)
 
-class EvalModel(collections.namedtuple('EvalModel',('graph','model',
-	'iterator','src_file_placeholder','tgt_file_placeholder'))) : 
-	pass
-
-def create_eval_model(param,scope) : 
-	
-	graph=tf.Graph()
-
-	with graph.as_default(), tf.container(scope or 'eval') : 
-
-		# Getting Vocabulary
-		vocab=data_preparation.vocab_lookup_tables()
-
-		# Placeholders
-		src_file_placeholder=tf.placeholder(shape=(),dtype=tf.string)
-		tgt_file_placeholder=tf.placeholder(shape=(),dtype=tf.string)
-
-		batch_size=param.batch_size
-		src_dataset=tf.data.TextLineDataset(src_file_placeholder)
-		tgt_dataset=tf.data.TextLineDataset(tgt_file_placeholder)
-
-		# Iterator
-		eval_iterator=data_preparation.train_dataset(src_dataset,tgt_dataset,
-			batch_size,vocab.src_eos_id,vocab.tgt_eos_id,
-			vocab.tgt_sos_id,vocab.src_vocab_table,vocab.tgt_vocab_table,
-			src_max_len=param.src_max_len_inf,tgt_max_len=param.tgt_max_len_inf)
-
-		model=model_attention.AttentionModel(param=param,
-			mode=tf.contrib.learn.ModeKeys.EVAL,iterator=eval_iterator,vocab=vocab,scope=scope)
-
-	return EvalModel(graph=graph,model=model,iterator=eval_iterator,
-		src_file_placeholder=src_file_placeholder,tgt_file_placeholder=tgt_file_placeholder)
 
 class InferModel(collections.namedtuple('InferModel',('graph','model','src_placeholder',
 	'batch_size_placeholder','iterator'))) : 
@@ -109,12 +77,16 @@ def create_infer_model(param,scope) :
 	return InferModel(graph=graph,model=model,src_placeholder=src_placeholder,
 		batch_size_placeholder=batch_size_placeholder,iterator=infer_iterator)
 
-def evaluation(infer_model,infer_sess,model_dir,param,global_step) : # Evaluate Test Data
+def evaluation(infer_model,infer_sess,model_dir,param,global_step,val_or_test) : # Evaluate Test Data
 	
-	 # as of now, no validation test
-
-	test_src_file='tst2013.en'
-	test_tgt_file='tst2013.vi'
+	if val_or_test=='val' : # Validation
+		print 'Evaluating on validation data'
+		test_src_file='tst2013.en'
+		test_tgt_file='tst2013.vi'
+	else : # Test
+		print 'Evaluaring on test data'
+		test_src_file='tst2012.en'
+		test_tgt_file='tst2012.vi'
 
 	with infer_model.graph.as_default() : 
 		loaded_infer_model,global_step_temp=basic_functions.create_or_load_model(
@@ -125,14 +97,7 @@ def evaluation(infer_model,infer_sess,model_dir,param,global_step) : # Evaluate 
 
 	basic_functions.decode_and_evaluate(model=loaded_infer_model,global_step=global_step,
 		sess=infer_sess,param=param,iterator=infer_model.iterator,
-		iterator_feed_dict=test_infer_iterator_feed_dict,ref_file=test_tgt_file,label='test')
-
-
-	
-
-
-
-
+		iterator_feed_dict=test_infer_iterator_feed_dict,ref_file=test_tgt_file,label=val_or_test)
 
 
 
@@ -143,7 +108,6 @@ def train(param,target_session='',scope=None) :
 	steps_per_stats=param.steps_per_stats
 
 	train_model=create_train_model(param=param,scope=scope)
-	eval_model=create_eval_model(param=param,scope=scope)
 	infer_model=create_infer_model(param=param,scope=scope)
 
 	# Loading data for sample decoding
@@ -161,90 +125,74 @@ def train(param,target_session='',scope=None) :
 
 	# Sessions
 	train_sess=tf.Session(target=target_session,graph=train_model.graph)
-	eval_sess=tf.Session(target=target_session,graph=eval_model.graph)
 	infer_sess=tf.Session(target=target_session,graph=infer_model.graph)
 
 	with train_model.graph.as_default() : 
 		#create or load model
-		print 'Train Model : '
 		loaded_train_model,global_step=basic_functions.create_or_load_model(
 			train_model.model,model_dir,train_sess,'train')
 
 	summary_writer=tf.summary.FileWriter(os.path.join(out_dir,summary_name),train_model.graph)
 
-	# First Evaluation
-	#basic_functions.run_full_eval(model_dir,infer_model,infer_sess,
-	#	eval_model,eval_sess,param,summary_writer,sample_src_data,sample_tgt_data)
-	# before train?
 
 	train_sess.run(train_model.iterator.initializer)
 
 	while global_step<num_train_steps : 
 
-		if global_step%10==0 : 
-			print num_train_steps,global_step,param.epoch_step
+		if global_step%steps_per_stats==0 : 
+			print 'Global Step : ',global_step,', Epoch Step : ',param.epoch_step
 
 		start_time=time.time()
 		try : 
-			step_result=loaded_train_model.train(train_sess)
-			
 
-			'''if (param.epoch_step+1)%2==0 : 
-				print 'Test Set Decode'				
-				evaluation(infer_model,infer_sess,model_dir,param,global_step)'''
-
-			#if param.epoch_step==4 : 
-			#	break
+			step_result=loaded_train_model.train(train_sess)			
 			param.epoch_step+=1
+
 		except tf.errors.OutOfRangeError : 
 			print 'Gone through the dataset once. Starting the next epoch..'
 			# Finished this run through the training set
 			# Go to next epoch
 			param.epoch_step=0
 			train_sess.run(train_model.iterator.initializer)
-			#run sample decode # todo
 
 			#Decode a random sentence from source data
 			print 'After completion of epoch : '
-			with infer_model.graph.as_default() : 
-				#print 'Infer Model : ,global_step=',global_step
-				loaded_infer_model,global_step_temp=basic_functions.create_or_load_model(
-					infer_model.model,model_dir,infer_sess,'infer')
-				#print 'global step=',global_step
-
-			print step_result
-			evaluation(infer_model,infer_sess,model_dir,param,global_step)
+			print 'Step Result : ',step_result
+			evaluation(infer_model,infer_sess,model_dir,param,global_step,'val')
 			
 			continue
 		
 		(_,step_loss,step_predict_count,global_step,step_word_count,
 			batch_size,step_grad_norm,learning_rate)=step_result
 
-		if global_step%25==0 : 
+		if global_step%steps_per_stats==0 :  
+			print 'Loss : ',step_loss,'  ,Learning Rate :  ',learning_rate
+
+		if global_step%50==0 : 
 			print 'Saving checkpoint...'
 			loaded_train_model.saver.save(train_sess,os.path.join(out_dir,'translate.ckpt'),
 				global_step=global_step)
 
-		if global_step%10==0 : 
-			print step_result
+		if global_step%100==0 : 
+			#print step_result
 
 			with infer_model.graph.as_default() : 
-				#print 'Infer Model : ,global_step=',global_step
 				loaded_infer_model,global_step_temp=basic_functions.create_or_load_model(
 					infer_model.model,model_dir,infer_sess,'infer')
-				#print 'global step=',global_step
+
 			print 'Sample Decode'
 			basic_functions.sample_decode(loaded_infer_model,global_step,infer_sess,
 				param,infer_model.iterator,sample_src_data,sample_tgt_data,
 				infer_model.src_placeholder,infer_model.batch_size_placeholder,summary_writer)
 
-		if global_step%10==0 : 
-			evaluation(infer_model,infer_sess,model_dir,param,global_step)
+		if global_step%100==0 : 
+			evaluation(infer_model,infer_sess,model_dir,param,global_step,'val')
 			
 
 
+	print 'Training done, evaluating now..'
 	# Testing on the test set now
-	evaluation(infer_model,infer_sess,model_dir,param,global_step)
+	evaluation(infer_model,infer_sess,model_dir,param,global_step,'test')
 
 
 

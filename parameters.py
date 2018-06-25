@@ -9,21 +9,24 @@ def create_params_hparams() :
 
 	return tf.contrib.training.HParams(
 		
-		batch_size=128,
-		infer_batch_size=32,
-		learning_rate=0.01,
+		batch_size=50,
+		infer_batch_size=20,
+		learning_rate=0.001,
 		init_weight=0.1,
 		max_grad_norm=5.0,
 		init_method='uniform',
-		num_train_steps=1000,
+		num_train_steps=12000,
+		decay_factor=0.999,
+		start_decay_global_step=600,
+		decay_steps=200, # decay every 200 steps from global_step=600
 
 		num_lstm_units=512,
 		num_layers_encoder=2,
 		num_layers_decoder=2,
-		inembsize=256, # size of embedding
-		dropout=0.7, # during training
+		inembsize=400, # size of embedding
+		dropout=0.9, # during training
 		
-		steps_per_stats=100,
+		steps_per_stats=10,
 		epoch_step=0,
 		
 		attention_option='luong',

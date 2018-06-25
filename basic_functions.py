@@ -61,9 +61,8 @@ def sample_decode(model,global_step,sess,param,iterator,src_data,tgt_data,iterat
 
 	translation=helper_fns.translate(nmt_output,
 		sent_id=0,tgt_eos='</s>')
-	#print nmt_output,'\n',src_data[decode_id]
 
-	# Not printing translation
+	# Printing translation
 	print 'Source : ',src_data[decode_id]
 	print 'Actual Target : ',tgt_data[decode_id]
 	print 'Translation : ',translation
@@ -117,7 +116,7 @@ def decode_and_evaluate(model,global_step,sess,param,iterator,
 				break
 
 
-	# Add a evaluation metric
+	os.system('python calculate_bleu_score.py '+ref_file+' '+trans_file)
 
 
 

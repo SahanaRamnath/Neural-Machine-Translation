@@ -26,6 +26,7 @@ def format_text(words) :
 	#if(not hasattr(words,'__len__')) and not isinstance(words,collections.Iterable) : 
 	#	words=[words]
 
+	# Converting/Ensuring it is of type list
 	if type(words[0])==type([1,2]) : 
 		words=words[0]
 	if not type(words)==type([1,2]) : 
@@ -41,15 +42,8 @@ def translate(nmt_output,sent_id,tgt_eos) :
 
 	if tgt_eos : 
 		tgt_eos=tgt_eos.encode('utf-8')
-
-	#print nmt_output
 	
 	output=nmt_output[sent_id,:].tolist()
-
-	#print type(output)
-
-	#if tgt_eos and tgt_eos in output : 
-	#	output=[:output.index(tgt_eos)] # Keeping just one eos symbol
 
 	translation=format_text(output)
 

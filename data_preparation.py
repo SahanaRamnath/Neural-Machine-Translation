@@ -42,8 +42,8 @@ def vocab_lookup_tables() :
 
 	src_vocab_size=eng_vocab_size
 	tgt_vocab_size=viet_vocab_size
-	src_max_len=50 # actually 18
-	tgt_max_len=50 # actually 18
+	src_max_len=50
+	tgt_max_len=50
 
 	#creating vocab lookup tables
 	src_vocab_table=tf.contrib.lookup.index_table_from_file(vocabulary_file='vocab.en',vocab_size=src_vocab_size,default_value=0)
@@ -76,15 +76,10 @@ def train_dataset(src_dataset,tgt_dataset,batch_size,src_eos_id,tgt_eos_id,tgt_s
 	src_vocab_table,tgt_vocab_table,src_max_len,tgt_max_len) : 
 
 
-	train_eng_file=open('train.en','r')
-	train_viet_file=open('train.vi','r')
-
 	UNK='<unk>'
 	SOS='<s>'
 	EOS='</s>'
 
-	#src_max_len=50 # actually 18
-	#tgt_max_len=50 # actually 18
 
 
 	#combining source and target datasets
@@ -106,7 +101,7 @@ def train_dataset(src_dataset,tgt_dataset,batch_size,src_eos_id,tgt_eos_id,tgt_s
 	#append sos and eos to beginning and end of target input respectively
 	src_tgt_dataset=src_tgt_dataset.map(lambda src,tgt : (src,tf.concat(([tgt_sos_id],tgt),0),tf.concat((tgt,[tgt_eos_id]),0)),num_parallel_calls=4).prefetch(output_buffer_size)
 
-	#add sequence lengths (?)
+	#add sequence lengths
 	src_tgt_dataset=src_tgt_dataset.map(lambda src,tgt_in,tgt_out : (src,tgt_in,tgt_out,tf.size(src),tf.size(tgt_in)),num_parallel_calls=4).prefetch(output_buffer_size)
 
 	#buckets (to group by sequence lengths) not using now
@@ -130,18 +125,11 @@ def train_dataset(src_dataset,tgt_dataset,batch_size,src_eos_id,tgt_eos_id,tgt_s
 
 def test_dataset(src_dataset,batch_size,src_eos_id,src_vocab_table,src_max_len) : 
 
-	test_eng_file=open('tst2013.en','r')
-	test_viet_file=open('tst2013.vi','r')
 
 	UNK='<unk>'
 	SOS='<s>'
 	EOS='</s>'
 
-	#src_dataset=tf.data.TextLineDataset('tst2013.en')
-	#tgt_dataset=tf.data.TextLineDataset('tst2013.vi')
-
-	#src_max_len=50 # actually 18
-	#tgt_max_len=50 # actually 18
 
 	# Splitting sentence into words
 	src_dataset=src_dataset.map(lambda src : tf.string_split([src]).values)
@@ -151,7 +139,7 @@ def test_dataset(src_dataset,batch_size,src_eos_id,src_vocab_table,src_max_len) 
 	# Convert words into their integer ids using the previously generated lookup tables
 	src_dataset=src_dataset.map(lambda src : tf.cast(src_vocab_table.lookup(src),tf.int32))
 
-	# Adding in the word counts (?)
+	# Adding in the word counts
 	src_dataset=src_dataset.map(lambda src : (src,tf.size(src)))
 	batched_dataset=batching_function_test(src_dataset,batch_size,src_eos_id)
 	batched_iter=batched_dataset.make_initializable_iterator()

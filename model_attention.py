@@ -74,7 +74,8 @@ class AttentionModel() :
 		parameters=tf.trainable_variables()
 
 		if self.mode==tf.contrib.learn.ModeKeys.TRAIN : 
-			self.learning_rate=tf.constant(param.learning_rate) # not decaying etc.
+			self.learning_rate=tf.constant(param.learning_rate)
+			self.learning_rate=self.decay_learning_rate(param)
 
 			# Adam Optimizer
 			opt=tf.train.AdamOptimizer(self.learning_rate)
@@ -95,8 +96,13 @@ class AttentionModel() :
 
 		self.saver=tf.train.Saver(tf.global_variables(),max_to_keep=param.num_ckpts)
 
+	def decay_learning_rate(self,param) : 
 
-
+		return tf.cond(self.global_step<param.start_decay_global_step,
+			lambda : self.learning_rate,
+			lambda : tf.train.exponential_decay(self.learning_rate,
+				(self.global_step-param.start_decay_global_step),param.decay_steps,
+				param.decay_factor,staircase=True),name='learning_rate_decay_cond')
 
 
 	def make_single_lstm_unit(self,num_units) : 
@@ -216,6 +222,7 @@ class AttentionModel() :
 
 		batch_size=self.batch_size
 
+		print 'MEMORY : ',memory
 		# Attention Mechanism
 		attention_mechanism=self.attention_mechanism_fn(attention_option,
 			num_units,memory,source_seq_len)
