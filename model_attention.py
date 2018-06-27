@@ -38,8 +38,15 @@ class AttentionModel() :
 		self.time_major=param.time_major
 
 		# Setting initializer
-		initializer=tf.random_uniform_initializer(-param.init_weight,param.init_weight)
-		tf.get_variable_scope().set_initializer(initializer)
+		if param.init_method=='uniform' : 
+			initializer=tf.random_uniform_initializer(-param.init_weight,param.init_weight)
+			tf.get_variable_scope().set_initializer(initializer)
+		elif param.init_method=='gaussian' : 
+			initializer=tf.truncated_normal_initializer(mean=param.init_mean,
+				stddev=param.init_std,seed=None,dtype=tf.float32)
+			tf.get_variable_scope().set_initializer(initializer)
+		else : 
+			raise ValueError('Give Valid method of weight initialisation')
 
 		# Embedding
 		[self.embedding_encoder,self.embedding_decoder]=fn.embedding(self.src_vocab_size,

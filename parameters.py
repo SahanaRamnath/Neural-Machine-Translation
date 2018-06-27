@@ -11,19 +11,21 @@ def create_params_hparams() :
 		
 		batch_size=50,
 		infer_batch_size=20,
-		learning_rate=0.001,
-		init_weight=0.1,
+		learning_rate=0.01,
+		init_weight=0.1, # for uniform initialisation of weights between [-init_weight,init_weight]
+		init_mean=0, # mean for gaussian initialisation of weights
+		init_std=0.1, # standard deviation for gaussian initialisation of weights
 		max_grad_norm=5.0,
-		init_method='uniform',
+		init_method='gaussian', # uniform or gaussian
 		num_train_steps=12000,
 		decay_factor=0.999,
-		start_decay_global_step=600,
-		decay_steps=200, # decay every 200 steps from global_step=600
+		start_decay_global_step=200,
+		decay_steps=1000, # decay every 200 steps from global_step=600
 
 		num_lstm_units=512,
 		num_layers_encoder=2,
 		num_layers_decoder=2,
-		inembsize=400, # size of embedding
+		inembsize=512, # size of embedding
 		dropout=0.9, # during training
 		
 		steps_per_stats=10,
@@ -34,7 +36,7 @@ def create_params_hparams() :
 		pass_hidden_state=True, # to pass encoder's final state to decoder's initial state
 		time_major=True,
 		
-		out_dir='En_Vi_Out_Dir',
+		out_dir='En_Vi_Out_Dir_4',
 		
 		src_max_len=50, # max length of source sequence during training 
 		tgt_max_len=50, # max length of target sequence during training
