@@ -67,15 +67,6 @@ def sample_decode(model,global_step,sess,param,iterator,src_data,tgt_data,iterat
 	print 'Actual Target : ',tgt_data[decode_id]
 	print 'Translation : ',translation
 
-def run_full_eval(model_dir,infer_model,infer_sess,
-	eval_model,eval_sess,param,summary_writer,src_data,tgt_data) : 
-	
-	# Decode a random sentence from source data
-	with infer_model.graph.as_default() : 
-		loaded_infer_model,global_step=create_or_load_model(infer_model.model,model_dir,infer_sess,'infer')
-
-	sample_decode(loaded_infer_model,global_step,infer_sess,param,infer_model.iterator,src_data,tgt_data,
-		infer_model.src_placeholder,infer_model.batch_size_placeholder,summary_writer)
 
 def decode_and_evaluate(model,global_step,sess,param,iterator,
 		iterator_feed_dict,ref_file,label) : 
@@ -100,20 +91,22 @@ def decode_and_evaluate(model,global_step,sess,param,iterator,
 		while True : 
 			try : 
 				nmt_output,_=model.decode(sess)
-				nmt_output=np.expand_dims(nmt_output,0)
-				batch_size=nmt_output.shape[1]
+				batch_size=nmt_output.shape[0]
 				num_sentences+=batch_size
 
-				for sent_id in range(batch_size) : 
-					translation=helper_fns.translate(nmt_output[0],sent_id,tgt_eos='</s>')
+				for i in range(batch_size) : 
+					translation=helper_fns.translate(nmt_output[i],sent_id=0,tgt_eos='</s>')
 					#print 'Test Translation : ',translation
 					#print type(translation)
 					trans_f.write((translation+'\n').decode('utf-8'))
-					#trans_f.write('\n')
 
 			except tf.errors.OutOfRangeError : 
 				print num_sentences,' sentences decoded.'
 				break
+
+	# BLEU Score
+	print 'Reference File : ',ref_file
+	print 'Predicted File : ',trans_file
 
 
 	os.system('python calculate_bleu_score.py '+ref_file+' '+trans_file)

@@ -31,8 +31,8 @@ def create_train_model(param,scope) :
 
 		# Iterator for training
 		batch_size=param.batch_size
-		src_dataset=tf.data.TextLineDataset('train.en')
-		tgt_dataset=tf.data.TextLineDataset('train.vi')
+		src_dataset=tf.data.TextLineDataset('Datasets/train.en')
+		tgt_dataset=tf.data.TextLineDataset('Datasets/train.vi')
 
 		train_iterator=data_preparation.train_dataset(src_dataset,tgt_dataset,
 			batch_size,vocab.src_eos_id,vocab.tgt_eos_id,
@@ -81,12 +81,15 @@ def evaluation(infer_model,infer_sess,model_dir,param,global_step,val_or_test) :
 	
 	if val_or_test=='val' : # Validation
 		print 'Evaluating on validation data'
-		test_src_file='tst2013.en'
-		test_tgt_file='tst2013.vi'
-	else : # Test
+		test_src_file='Datasets/tst2013.en'
+		test_tgt_file='Datasets/tst2013.vi'
+	elif val_or_test=='test' : # Test
 		print 'Evaluaring on test data'
-		test_src_file='tst2012.en'
-		test_tgt_file='tst2012.vi'
+		test_src_file='Datasets/tst2012.en'
+		test_tgt_file='Datasets/tst2012.vi'
+	else : 
+		raise ValueError('Give appropriate labels.')
+
 
 	with infer_model.graph.as_default() : 
 		loaded_infer_model,global_step_temp=basic_functions.create_or_load_model(
@@ -111,8 +114,8 @@ def train(param,target_session='',scope=None) :
 	infer_model=create_infer_model(param=param,scope=scope)
 
 	# Loading data for sample decoding
-	dev_src_file='tst2013.en'
-	dev_tgt_file='tst2013.vi'
+	dev_src_file='Datasets/tst2013.en'
+	dev_tgt_file='Datasets/tst2013.vi'
 	sample_src_data=additional_functions.load_data(dev_src_file)
 	sample_tgt_data=additional_functions.load_data(dev_tgt_file)
 
@@ -173,7 +176,7 @@ def train(param,target_session='',scope=None) :
 			loaded_train_model.saver.save(train_sess,os.path.join(out_dir,'translate.ckpt'),
 				global_step=global_step)
 
-		if global_step%100==0 : 
+		if global_step%200==0 : 
 			#print step_result
 
 			with infer_model.graph.as_default() : 
@@ -185,7 +188,7 @@ def train(param,target_session='',scope=None) :
 				param,infer_model.iterator,sample_src_data,sample_tgt_data,
 				infer_model.src_placeholder,infer_model.batch_size_placeholder,summary_writer)
 
-		if global_step%100==0 : 
+		if global_step%200==0 : 
 			evaluation(infer_model,infer_sess,model_dir,param,global_step,'val')
 			
 

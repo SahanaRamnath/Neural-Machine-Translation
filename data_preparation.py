@@ -23,8 +23,8 @@ def vocab_lookup_tables() :
 	#print 'Loading and collecting data....'
 
 	#opening required files
-	english_file=open('vocab.en','r')
-	viet_file=open('vocab.vi','r')
+	english_file=open('Datasets/vocab.en','r')
+	viet_file=open('Datasets/vocab.vi','r')
 
 	#preprocessing and counting vocablary
 	#source : english, target : vietnamese
@@ -46,9 +46,9 @@ def vocab_lookup_tables() :
 	tgt_max_len=50
 
 	#creating vocab lookup tables
-	src_vocab_table=tf.contrib.lookup.index_table_from_file(vocabulary_file='vocab.en',vocab_size=src_vocab_size,default_value=0)
-	tgt_vocab_table=tf.contrib.lookup.index_table_from_file(vocabulary_file='vocab.vi',vocab_size=tgt_vocab_size,default_value=0)
-	reverse_tgt_vocab_table=lookup_ops.index_to_string_table_from_file('vocab.vi',default_value=UNK)
+	src_vocab_table=tf.contrib.lookup.index_table_from_file(vocabulary_file='Vocabulary_Files/vocab.en',vocab_size=src_vocab_size,default_value=0)
+	tgt_vocab_table=tf.contrib.lookup.index_table_from_file(vocabulary_file='Vocabulary_Files/vocab.vi',vocab_size=tgt_vocab_size,default_value=0)
+	reverse_tgt_vocab_table=lookup_ops.index_to_string_table_from_file('Vocabulary_Files/vocab.vi',default_value=UNK)
 
 	src_eos_id = tf.cast(src_vocab_table.lookup(tf.constant(EOS)), tf.int32)
 	tgt_sos_id = tf.cast(tgt_vocab_table.lookup(tf.constant(SOS)), tf.int32)

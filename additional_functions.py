@@ -26,14 +26,6 @@ def format_text(words) :
 	#if(not hasattr(words,'__len__')) and not isinstance(words,collections.Iterable) : 
 	#	words=[words]
 
-	# Converting/Ensuring it is of type list
-	if type(words[0])==type([1,2]) : 
-		words=words[0]
-	if not type(words)==type([1,2]) : 
-		words=[words]
-
-	#print words
-
 	return ' '.join(words)
 
 
@@ -43,7 +35,11 @@ def translate(nmt_output,sent_id,tgt_eos) :
 	if tgt_eos : 
 		tgt_eos=tgt_eos.encode('utf-8')
 	
-	output=nmt_output[sent_id,:].tolist()
+	output=list(nmt_output)
+
+	if '</s>' in output : # consider only uptil first end-of-sentence character
+		eos_index=output.index('</s>')
+		output=output[0:eos_index]
 
 	translation=format_text(output)
 
