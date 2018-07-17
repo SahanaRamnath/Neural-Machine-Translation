@@ -23,8 +23,8 @@ def vocab_lookup_tables() :
 	#print 'Loading and collecting data....'
 
 	#opening required files
-	english_file=open('Datasets/vocab.en','r')
-	viet_file=open('Datasets/vocab.vi','r')
+	english_file=open('Vocabulary_Files/vocab.en','r')
+	viet_file=open('Vocabulary_Files/vocab.vi','r')
 
 	#preprocessing and counting vocablary
 	#source : english, target : vietnamese
