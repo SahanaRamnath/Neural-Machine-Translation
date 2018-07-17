@@ -45,6 +45,9 @@ class AttentionModel() :
 			initializer=tf.truncated_normal_initializer(mean=param.init_mean,
 				stddev=param.init_std,seed=None,dtype=tf.float32)
 			tf.get_variable_scope().set_initializer(initializer)
+		elif param.init_method=='xavier' : 
+			initializer=tf.contrib.layers.xavier_initializer(uniform=False,dtype=tf.float32)
+			tf.get_variable_scope().set_initializer(initializer)
 		else : 
 			raise ValueError('Give Valid method of weight initialisation')
 
@@ -65,13 +68,11 @@ class AttentionModel() :
 		if self.mode==tf.contrib.learn.ModeKeys.TRAIN : 			
 			self.train_loss=results[1]
 			self.word_count=tf.reduce_sum(self.iterator.source_seq_len)+tf.reduce_sum(self.iterator.target_seq_len)
-		elif self.mode==tf.contrib.learn.ModeKeys.EVAL : 
-			self.eval_loss=results[1]
 		elif self.mode==tf.contrib.learn.ModeKeys.INFER : 
 			self.infer_logits,_,self.final_context_state,self.sample_id=results
 			self.sample_words=vocab.reverse_tgt_vocab_table.lookup(tf.to_int64(self.sample_id))
-		else : # remove this
-			pass 
+		else : 
+			raise ValueError('Give a valid mode')
 
 		if self.mode!=tf.contrib.learn.ModeKeys.INFER : 
 			self.predict_count=tf.reduce_sum(self.iterator.target_seq_len)
@@ -116,7 +117,7 @@ class AttentionModel() :
 
 		#print 'Making a single LSTM unit'
 
-		single_cell=rnn.BasicLSTMCell(num_units,forget_bias=1.0)
+		single_cell=rnn.BasicLSTMCell(num_units,activation=tf.tanh,forget_bias=1.0)
 		
 		if self.mode==tf.contrib.learn.ModeKeys.TRAIN : 
 			dropout=self.dropout
@@ -245,7 +246,34 @@ class AttentionModel() :
 			output_attention=param.output_attention,name='attention')
 
 		if param.pass_hidden_state : 
-			decoder_init_state=cell.zero_state(batch_size,dtype=tf.float32).clone(cell_state=encoder_state)
+		
+			W_hidden=tf.get_variable(name='W_hidden',shape=[2,num_units,num_units],
+				initializer=tf.contrib.layers.xavier_initializer())
+			#encoder_final_state_c = tf.concat((encoder_state[0].c, encoder_state[1].c), 1)
+			decoder_init_state_c_fw = tf.matmul(encoder_state[0].c,W_hidden[0])
+			decoder_init_state_c_fw=tf.tanh(decoder_init_state_c_fw)
+			decoder_init_state_c_bw = tf.matmul(encoder_state[1].c,W_hidden[0])
+			decoder_init_state_c_bw=tf.tanh(decoder_init_state_c_bw)
+
+			#encoder_final_state_h = tf.concat((encoder_state[0].h, encoder_state[1].h), 1)
+			decoder_init_state_h_fw= tf.matmul(encoder_state[0].h,W_hidden[1])
+			decoder_init_state_h_fw=tf.tanh(decoder_init_state_h_fw)
+			decoder_init_state_h_bw= tf.matmul(encoder_state[1].h,W_hidden[1])
+			decoder_init_state_h_bw=tf.tanh(decoder_init_state_h_bw)
+
+			decoder_initial_state_fw= tf.contrib.rnn.LSTMStateTuple(
+    			c=decoder_init_state_c_fw,
+    			h=decoder_init_state_h_fw)
+			decoder_initial_state_bw= tf.contrib.rnn.LSTMStateTuple(
+    			c=decoder_init_state_c_bw,
+    			h=decoder_init_state_h_bw)
+
+			decoder_initial_state=(decoder_initial_state_fw,decoder_initial_state_bw)
+
+			#print encoder_state,'\n\n',decoder_initial_state,'\n\n'
+			decoder_init_state=cell.zero_state(batch_size,dtype=tf.float32).clone(cell_state=decoder_initial_state)
+			#decoder_init_state=cell.zero_state(batch_size,dtype=tf.float32).clone(cell_state=encoder_state)
+			
 		else : 
 			decoder_init_state=cell.zero_state(batch_size,dtype=tf.float32)
 
