@@ -4,7 +4,6 @@ ADDITIONAL FUNCTIONS
 --------------------
 '''
 
-# change name to additional functions
 
 import codecs
 import collections

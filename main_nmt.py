@@ -13,8 +13,7 @@ import train_nmt
 def nmt_start(unused_argv) : 
 
 	param=parameters.create_params_hparams()
-	train_fn=train_nmt.train # doing
-	##inf_fn=inference.inference
+	train_fn=train_nmt.train 
 
 	#output directory
 	out_dir=param.out_dir
@@ -27,8 +26,7 @@ def nmt_start(unused_argv) :
 	target_session=''
 
 	# to be done
-	# Inference
-	# Evaluation
+	# Separate code file for Evaluation
 
 	# else call train function
 	train_fn(param,target_session=target_session)

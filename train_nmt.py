@@ -1,7 +1,7 @@
 '''
----------------
-TRAIN THE MODEL
----------------
+----------------------------
+TRAIN AND EVALUATE THE MODEL
+----------------------------
 '''
 
 import collections

@@ -1,7 +1,7 @@
 '''
--------------------------------------
-FUNCTION DEFINITIONS FOR ARCHITECTURE
--------------------------------------
+----------------------------------------------------
+FUNCTION DEFINITIONS FOR NEURAL NETWORK ARCHITECTURE
+----------------------------------------------------
 '''
 
 import tensorflow as tf
